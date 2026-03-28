@@ -9,9 +9,20 @@ from torch.utils.data import DataLoader
 from modeling_deberta import DebertaModel
 from peft import LoraConfig, get_peft_model
 
+
+def get_device():
+    """Return the best available device: CUDA → MPS (Apple Silicon) → CPU."""
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
 def main(args, seed, mode="test"):
     
-    device = torch.device("cuda:4")
+    device = get_device()
+    print(f"Using device: {device}")
 
     if args.task == "scholar-xl":
         eval_cme_path = "./data/scholar-xl/{}.json".format(mode)
@@ -34,8 +45,8 @@ def main(args, seed, mode="test"):
 
     BATCH_SIZE = 4
 
-    tokenizer = AutoTokenizer.from_pretrained("/workspace/yelin/bio_baselines/PLM/deberta-v3-large")
-    encoder = DebertaModel.from_pretrained("/workspace/yelin/bio_baselines/PLM/deberta-v3-large")
+    tokenizer = AutoTokenizer.from_pretrained(args.model_path)
+    encoder = DebertaModel.from_pretrained(args.model_path)
     model = CNNNer(encoder, num_ner_tag=ENT_CLS_NUM, cnn_dim=args.cnn_dim, biaffine_size=args.biaffine_size,
                     size_embed_dim=0, logit_drop=args.logit_drop,
                     chunks_size=args.chunks_size, cnn_depth=args.cnn_depth, attn_dropout=0.2).to(device)
@@ -88,6 +99,8 @@ if __name__ == '__main__':
     parser.add_argument('--biaffine_size', default=100, type=int)
     parser.add_argument('--chunks_size', default=128, type=int)
     parser.add_argument('--task', default="scholar-xl")
+    parser.add_argument('--model_path', default="microsoft/deberta-v3-large",
+                        help="Path to pretrained DeBERTa model (local directory or HuggingFace Hub ID)")
 
     args = parser.parse_args()
 

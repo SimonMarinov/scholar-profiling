@@ -1,9 +1,30 @@
 from torch import nn
 from fastNLP import seq_len_to_mask
-from torch_scatter import scatter_max
 import torch
 import torch.nn.functional as F
 from .cnn import CrossTransformer
+
+
+def scatter_max(src: torch.Tensor, index: torch.Tensor, dim: int):
+    """Pure-PyTorch drop-in replacement for torch_scatter.scatter_max.
+
+    Returns (values, argmax) to match the torch_scatter API; only *values*
+    are used in this codebase so argmax is returned as None.
+    Works on CUDA, Apple-Silicon MPS, and CPU.
+    """
+    # Build the output shape: same as src except size along `dim` = max index + 1
+    out_size = list(src.size())
+    out_size[dim] = int(index.max().item()) + 1
+    out = src.new_full(out_size, float("-inf"))
+
+    # Expand index to the same number of dimensions as src (needed for scatter)
+    idx = index
+    for _ in range(src.dim() - index.dim()):
+        idx = idx.unsqueeze(-1)
+    idx = idx.expand_as(src)
+
+    out.scatter_reduce_(dim, idx, src, reduce="amax", include_self=True)
+    return out, None  # (values, argmax)
 
 class CNNNer(nn.Module):
     def __init__(self, encoder, num_ner_tag, cnn_dim=200, biaffine_size=200,
@@ -168,8 +189,8 @@ class CNNNer(nn.Module):
         mask = self._get_invalid_locations_mask_fixed_dilation(affected_seq_len, w, d)
         mask = mask[None, :, :]
 
-        ending_mask = mask.flip(dims=(1, 2)).bool().cuda()
-        return affected_seq_len, mask.bool().cuda(), ending_mask
+        ending_mask = mask.flip(dims=(1, 2)).bool()
+        return affected_seq_len, mask.bool(), ending_mask
 
     def forward(self, input_ids, bpe_len, indexes, matrix=None): 
         attention_mask = seq_len_to_mask(bpe_len)

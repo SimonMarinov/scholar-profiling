@@ -1,7 +1,9 @@
 #!/bin/bash
-MASTER_PORT=$(shuf -n 1 -i 10000-65535)
+# Train on a local machine (CUDA, Apple-Silicon MPS, or CPU).
+# Optionally set MODEL_PATH to a local directory; defaults to the HuggingFace Hub.
+MODEL_PATH="${MODEL_PATH:-microsoft/deberta-v3-large}"
 
-deepspeed --include=localhost:0,1,2,3,4,5,6,7 --master_port $MASTER_PORT train.py \
+python train.py \
     --task scholar-xl \
     --n_epochs 30 \
     --lr 7e-4 \
@@ -10,4 +12,5 @@ deepspeed --include=localhost:0,1,2,3,4,5,6,7 --master_port $MASTER_PORT train.p
     --chunks_size 128 \
     --batch_size 16 \
     --logit_drop 0.1 \
-    --cnn_depth 2
+    --cnn_depth 2 \
+    --model_path "$MODEL_PATH"
