@@ -71,7 +71,7 @@ class Arrow_Attention(nn.Module):
 
         chunk_stride = list(x.stride())
         chunk_stride[1] = chunk_stride[1] // 2
-        return x.as_strided(size=chunk_size, stride=chunk_stride)
+        return x.as_strided(size=chunk_size, stride=chunk_stride).contiguous()
     
     @staticmethod
     def _pad_and_transpose_last_two_dims(hidden_states_padded, padding):
@@ -252,7 +252,7 @@ class Arrow_Attention(nn.Module):
             chunked_value_stride[1],
             chunked_value_stride[2],
         )
-        chunked_value = padded_value.as_strided(size=chunked_value_size, stride=chunked_value_stride)
+        chunked_value = padded_value.as_strided(size=chunked_value_size, stride=chunked_value_stride).contiguous()
 
         chunked_attn_probs = self._pad_and_diagonalize(chunked_attn_probs)
 

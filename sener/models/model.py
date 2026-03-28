@@ -100,7 +100,7 @@ class CNNNer(nn.Module):
 
         chunk_stride = list(x.stride())
         chunk_stride[1] = chunk_stride[1] // 2
-        return x.as_strided(size=chunk_size, stride=chunk_stride)
+        return x.as_strided(size=chunk_size, stride=chunk_stride).contiguous()
     
     @staticmethod
     def _pad_and_transpose_last_two_dims(hidden_states_padded, padding):
