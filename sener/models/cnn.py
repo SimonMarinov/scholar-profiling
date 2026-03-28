@@ -88,7 +88,7 @@ class CrossTransformer(nn.Module):
         if use_tri_bias is True:
             self.pos_embed = nn.Embedding(2, dim)
             nn.init.xavier_normal_(self.pos_embed.weight.data, gain=0.1 if scale else 1)
-        if use_tri_bias is 2:
+        if use_tri_bias == 2:
             pos = torch.ones(512, 512, dtype=torch.long) * 2
             pos.triu_()
             pos = pos - torch.eye(512)
