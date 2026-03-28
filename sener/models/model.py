@@ -1,8 +1,20 @@
 from torch import nn
-from fastNLP import seq_len_to_mask
 import torch
 import torch.nn.functional as F
 from .cnn import CrossTransformer
+
+
+def seq_len_to_mask(seq_len: torch.Tensor, max_len: int = None) -> torch.Tensor:
+    """Convert a 1-D tensor of sequence lengths to a boolean attention mask.
+
+    Returns a 2-D bool tensor of shape (batch, max_len) where position i is
+    True (valid) when i < seq_len[batch].  This is a pure-PyTorch replacement
+    for the fastNLP utility of the same name.
+    """
+    if max_len is None:
+        max_len = int(seq_len.max().item())
+    arange = torch.arange(max_len, device=seq_len.device)
+    return arange.unsqueeze(0) < seq_len.unsqueeze(1)
 
 
 def scatter_max(src: torch.Tensor, index: torch.Tensor, dim: int):
